@@ -3,11 +3,11 @@ package com.mt.oep.data;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class DataModelTest {
+public class AccountRepositoryTest {
 
     @Test
     public void setNotExistingClient(){
-        DataModel dm = new DataModel();
+        AccountRepository dm = new AccountRepository();
         dm.addNewClient("ABC");
         dm.addNewClient("DEF");
 
@@ -17,7 +17,7 @@ public class DataModelTest {
 
     @Test
     public void setNegativeMoney(){
-        DataModel dm = new DataModel();
+        AccountRepository dm = new AccountRepository();
         dm.addNewClient("ABC");
         dm.addNewClient("DEF");
 

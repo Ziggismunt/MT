@@ -1,37 +1,42 @@
 package com.mt.oep.data;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class DataModel {
-    private ConcurrentMap<Long, ClientInfo> clients;
-    private static Long maxID;
+public class AccountRepository {
+    private ConcurrentMap<Long, Account> clients;
+    private static AtomicLong maxID;
+    private Logger logger;
 
-    public DataModel() {
-        maxID = 0L;
+    public AccountRepository() {
+        maxID = new AtomicLong(0L);
         this.clients = new ConcurrentHashMap<>();
+        logger = LoggerFactory.getLogger(AccountRepository.class);
     }
 
     public void addNewClient(String name){
-        maxID++;
-        clients.putIfAbsent(maxID, new ClientInfo(name));
+        clients.putIfAbsent(maxID.incrementAndGet(), new Account(name));
     }
 
     public int setClientsMoney(long id, float amount){
         if (! ifClientExist(id)){
-            System.out.println("No such client!");
+            logger.error("No such client!");
             return -1;
         }
-        ClientInfo client = clients.get(id);
+        Account client = clients.get(id);
         return client.setAmount(amount);
     }
 
     public float getClientsMoney(long id){
         if (! ifClientExist(id)){
-            System.out.println("No such client!");
+            logger.error("No such client!");
             return -1f;
         }
-        ClientInfo client = clients.get(id);
+        Account client = clients.get(id);
         return client.getAmount();
     }
 

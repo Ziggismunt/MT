@@ -1,12 +1,17 @@
 package com.mt.oep.data;
 
-public class ClientInfo {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Account {
     private String name;
     private float amount;
+    private Logger logger;
 
-    public ClientInfo(String name) {
+    public Account(String name) {
         this.name = name;
         this.amount = 0;
+        logger = LoggerFactory.getLogger(Account.class);
     }
 
     public String getName() {
@@ -19,7 +24,7 @@ public class ClientInfo {
 
     public int setAmount(float amount) {
         if (amount < 0) {
-            System.out.println("Clients can't have negative amount of money!");
+            logger.error("Clients can't have negative amount of money!");
             return -1;
         }
         this.amount = amount;

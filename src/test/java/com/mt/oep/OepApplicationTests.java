@@ -1,7 +1,5 @@
 package com.mt.oep;
 
-import com.mt.oep.data.DataModel;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
