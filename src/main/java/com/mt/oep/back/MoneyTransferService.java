@@ -1,47 +1,44 @@
 package com.mt.oep.back;
 
+import com.mt.oep.data.Account;
+import com.mt.oep.data.AccountValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.mt.oep.data.AccountRepository;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
+
 
 public class MoneyTransferService {
-    private AccountRepository accountRepository;
+    private AccountValidation accountValidation;
     private Logger logger;
 
-    public MoneyTransferService(AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
+    public MoneyTransferService(AccountValidation accountValidation) {
+        this.accountValidation = accountValidation;
         logger = LoggerFactory.getLogger(MoneyTransferService.class);
     }
 
-    public PaymentStatus sendMoney(long clientFrom, long clientTo, float money){
+    public PaymentStatus sendMoney(Account clientFrom, Account clientTo, float money){
         // primitive checks
-        if (!accountRepository.ifClientExist(clientFrom)){
-            logger.error("Sender doesn't exist");
-            return new PaymentStatus(ErrorCause.NO_SENDER);
-        }
-        if (!accountRepository.ifClientExist(clientTo)){
-            logger.error("Receiver doesn't exist");
-            return new PaymentStatus(ErrorCause.NO_RECEIVER);
-        }
-        if (money <= 0){
-            logger.error("Money must be positive");
-            return new PaymentStatus(ErrorCause.NEGATIVE);
-        }
-        if (clientFrom == clientTo){
+        if (clientFrom.equals(clientTo)){
             logger.error("You can't send money to yourself");
             return new PaymentStatus(ErrorCause.TO_HIMSELF);
         }
-        if (accountRepository.getClientsMoney(clientFrom) < money){
-            logger.error("Not enough money");
-            return new PaymentStatus(ErrorCause.NOT_ENOUGH_MONEY);
+        ErrorCause errorCause = accountValidation.validate(clientFrom, money);
+        if (errorCause != ErrorCause.OK){
+            return new PaymentStatus(errorCause);
+        }
+        errorCause = accountValidation.validate(clientTo);
+        if (errorCause != ErrorCause.OK){
+            return new PaymentStatus(errorCause);
         }
         // end of primitive checks
 
+
         synchronized (this){
-            float newAmount1 = accountRepository.getClientsMoney(clientFrom) - money;
-            float newAmount2 = accountRepository.getClientsMoney(clientTo) + money;
-            accountRepository.setClientsMoney(clientFrom, newAmount1);
-            accountRepository.setClientsMoney(clientTo, newAmount2);
+            float newAmountSender = clientFrom.getAmount() - money;
+            float newAmountReceiver = clientTo.getAmount() + money;
+            clientFrom.setAmount(newAmountSender);
+            clientTo.setAmount(newAmountReceiver);
         }
         logger.info("Perfect transaction");
 
