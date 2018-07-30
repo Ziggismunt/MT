@@ -4,6 +4,8 @@ import com.mt.oep.back.ErrorCause;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+
 public class AccountValidation {
     private AccountRepository accountRepository;
     private Logger logger;
@@ -21,16 +23,16 @@ public class AccountValidation {
         return ErrorCause.OK;
     }
 
-    public ErrorCause validate(Account account, float sum){
+    public ErrorCause validate(Account account, BigDecimal sum){
         if (!accountRepository.accountExists(account)){
             logger.error("Sender doesn't exist");
             return ErrorCause.NO_SENDER;
         }
-        if (sum <= 0){
+        if (sum.compareTo(new BigDecimal(0)) <= 0){
             logger.error("Money must be positive");
             return ErrorCause.NEGATIVE;
         }
-        if (account.getAmount() < sum){
+        if (account.getAmount().compareTo(sum) < 0){
             logger.error("Not enough money");
             return ErrorCause.NOT_ENOUGH_MONEY;
         }

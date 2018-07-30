@@ -3,6 +3,7 @@ package com.mt.oep.data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,7 +28,7 @@ public class AccountRepository {
         clients.putIfAbsent(maxID.incrementAndGet(), new Account(name));
     }
 
-    public int setClientsMoney(long id, float amount){
+    public int setClientsMoney(long id, BigDecimal amount){
         if (! ifClientExist(id)){
             logger.error("No such client!");
             return -1;
@@ -40,10 +41,10 @@ public class AccountRepository {
         return clients.get(id);
     }
 
-    public float getClientsMoney(long id){
+    public BigDecimal getClientsMoney(long id){
         if (! ifClientExist(id)){
             logger.error("No such client!");
-            return -1f;
+            return new BigDecimal(-1);
         }
         Account client = clients.get(id);
         return client.getAmount();
