@@ -41,15 +41,6 @@ public class AccountRepository {
         return clients.get(id);
     }
 
-    public BigDecimal getClientsMoney(long id){
-        if (! ifClientExist(id)){
-            logger.error("No such client!");
-            return new BigDecimal(-1);
-        }
-        Account client = clients.get(id);
-        return client.getAmount();
-    }
-
     public boolean ifClientExist(long id){
         return clients.get(id) != null;
     }

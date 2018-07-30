@@ -60,8 +60,8 @@ public class MoneyTransferServiceTest {
         accountRepository.setClientsMoney(1L, firstAmount);
         accountRepository.setClientsMoney(2L, secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend).getCauseOfError());
-        Assert.assertEquals(firstAmount.subtract(toSend), accountRepository.getClientsMoney(1L));
-        Assert.assertEquals(secondAmount.add(toSend), accountRepository.getClientsMoney(2L));
+        Assert.assertEquals(firstAmount.subtract(toSend), accountRepository.getAccount(1L).getAmount());
+        Assert.assertEquals(secondAmount.add(toSend), accountRepository.getAccount(2L).getAmount());
     }
 
     @Test
@@ -73,8 +73,8 @@ public class MoneyTransferServiceTest {
         accountRepository.setClientsMoney(2L, secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend).getCauseOfError());
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a2, a1, toSend).getCauseOfError());
-        Assert.assertEquals(firstAmount, accountRepository.getClientsMoney(1L));
-        Assert.assertEquals(secondAmount, accountRepository.getClientsMoney(2L));
+        Assert.assertEquals(firstAmount, accountRepository.getAccount(1L).getAmount());
+        Assert.assertEquals(secondAmount, accountRepository.getAccount(2L).getAmount());
     }
 
     @Test
@@ -87,8 +87,8 @@ public class MoneyTransferServiceTest {
         accountRepository.setClientsMoney(2L, secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend1).getCauseOfError());
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a2, a1, toSend2).getCauseOfError());
-        Assert.assertEquals(firstAmount.subtract(toSend1).add(toSend2), accountRepository.getClientsMoney(1L));
-        Assert.assertEquals(secondAmount.add(toSend1).subtract(toSend2), accountRepository.getClientsMoney(2L));
+        Assert.assertEquals(firstAmount.subtract(toSend1).add(toSend2), accountRepository.getAccount(1L).getAmount());
+        Assert.assertEquals(secondAmount.add(toSend1).subtract(toSend2), accountRepository.getAccount(2L).getAmount());
     }
 
     //TODO threads!
@@ -116,9 +116,9 @@ public class MoneyTransferServiceTest {
 //                e.printStackTrace();
 //            }
         }
-        System.out.println(accountRepository.getClientsMoney(1L));
-        System.out.println(accountRepository.getClientsMoney(2L));
-        System.out.println(accountRepository.getClientsMoney(3L));
+        System.out.println(accountRepository.getAccount(1L).getAmount());
+        System.out.println(accountRepository.getAccount(2L).getAmount());
+        System.out.println(accountRepository.getAccount(3L).getAmount());
 
 
 
