@@ -12,15 +12,17 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MoneyTransferServiceTest {
-    MoneyTransferService moneyTransferService;
-    AccountValidation accountValidation;
-    AccountLockerService accountLockerService;
-    AccountRepository accountRepository;
-    Account a1;
-    Account a2;
-    Account a3;
+    private MoneyTransferService moneyTransferService;
+    private AccountValidation accountValidation;
+    private AccountLockerService accountLockerService;
+    private AccountRepository accountRepository;
+    private Account a1;
+    private Account a2;
+    private Account a3;
+    private Account a4;
 
     @Before
     public void initialize() {
@@ -31,9 +33,11 @@ public class MoneyTransferServiceTest {
         a1 = new Account("A", new BigDecimal(5000));
         a2 = new Account("B", new BigDecimal(300));
         a3 = new Account("C");
+        a4 = new Account("D");
         accountRepository.addNewAccount(a1);
         accountRepository.addNewAccount(a2);
         accountRepository.addNewAccount(a3);
+        accountRepository.addNewAccount(a4);
     }
 
     @Test
@@ -53,7 +57,7 @@ public class MoneyTransferServiceTest {
 
     @Test
     public void TrySendNotEnoughMoney(){
-        accountRepository.setClientsMoney(1L, new BigDecimal(500));
+        accountRepository.setClientsMoney(a1.getID(), new BigDecimal(500));
         Assert.assertEquals(ErrorCause.NOT_ENOUGH_MONEY, moneyTransferService.sendMoney(a1, a2, new BigDecimal(1000)).getCauseOfError());
     }
 
@@ -102,7 +106,7 @@ public class MoneyTransferServiceTest {
         @Override
         public void run() {
             moneyTransferService.sendMoney(a1, a2, new BigDecimal(100));
-            moneyTransferService.sendMoney(a2, a3, new BigDecimal(50));
+            //moneyTransferService.sendMoney(a2, a3, new BigDecimal(50));
             moneyTransferService.sendMoney(a2, a1, new BigDecimal(50));
         }
     }
@@ -112,12 +116,12 @@ public class MoneyTransferServiceTest {
         BigDecimal firstAmount = new BigDecimal(4000000);
         BigDecimal secondAmount = new BigDecimal(1);
         BigDecimal thirdAmount = new BigDecimal(0);
-        accountRepository.setClientsMoney(1L, firstAmount);
-        accountRepository.setClientsMoney(2L, secondAmount);
-        accountRepository.setClientsMoney(3L, thirdAmount);
+        accountRepository.setClientsMoney(a1.getID(), firstAmount);
+        accountRepository.setClientsMoney(a2.getID(), secondAmount);
+        accountRepository.setClientsMoney(a3.getID(), thirdAmount);
         ExecutorService executor = Executors.newFixedThreadPool(100);
 
-        for (int i = 0; i < 300; i++){
+        for (int i = 0; i < 3000; i++){
             Runnable runnable = new myRunnable();
             executor.execute(runnable);
         }
@@ -129,6 +133,42 @@ public class MoneyTransferServiceTest {
         System.out.println(accountRepository.getAccount(a3.getID()).getAmount());
         Assert.assertEquals(firstAmount.add(secondAmount).add(thirdAmount), a1.getAmount().add(a2.getAmount()).add(a3.getAmount()));
 
+    }
+
+
+    private class RunTwoParallel implements Runnable{
+        @Override
+        public void run() {
+            moneyTransferService.sendMoney(a1, a2, new BigDecimal(1000));
+            moneyTransferService.sendMoney(a4, a3, new BigDecimal(100));
+        }
+    }
+
+    @Test
+    public void ParallelThirtyTransferThreads(){
+        BigDecimal firstAmount = new BigDecimal(4000000);
+        BigDecimal secondAmount = new BigDecimal(1);
+        BigDecimal thirdAmount = new BigDecimal(0);
+        BigDecimal fourthAmount = new BigDecimal(300000);
+        accountRepository.setClientsMoney(a1.getID(), firstAmount);
+        accountRepository.setClientsMoney(a2.getID(), secondAmount);
+        accountRepository.setClientsMoney(a3.getID(), thirdAmount);
+        accountRepository.setClientsMoney(a4.getID(), fourthAmount);
+        ExecutorService executor = Executors.newFixedThreadPool(100);
+
+        for (int i = 0; i < 3000; i++){
+            Runnable runnable = new RunTwoParallel();
+            executor.execute(runnable);
+        }
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+        System.out.println(accountRepository.getAccount(a1.getID()).getAmount());
+        System.out.println(accountRepository.getAccount(a2.getID()).getAmount());
+        System.out.println(accountRepository.getAccount(a3.getID()).getAmount());
+        System.out.println(accountRepository.getAccount(a4.getID()).getAmount());
+        Assert.assertEquals(firstAmount.add(secondAmount), a1.getAmount().add(a2.getAmount()));
+        Assert.assertEquals(thirdAmount.add(fourthAmount), a3.getAmount().add(a4.getAmount()));
 
 
     }

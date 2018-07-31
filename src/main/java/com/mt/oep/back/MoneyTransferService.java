@@ -30,11 +30,7 @@ public class MoneyTransferService {
             logger.error("You can't send money to yourself");
             return new PaymentStatus(ErrorCause.TO_HIMSELF);
         }
-        ErrorCause errorCause = accountValidation.validate(clientFrom, money);
-        if (errorCause != ErrorCause.OK){
-            return new PaymentStatus(errorCause);
-        }
-        errorCause = accountValidation.validate(clientTo);
+        ErrorCause errorCause = accountValidation.validate(clientTo);
         if (errorCause != ErrorCause.OK){
             return new PaymentStatus(errorCause);
         }
@@ -48,6 +44,10 @@ public class MoneyTransferService {
                     try {
                         if (lockTo.tryLock()) {
                             try{
+                                errorCause = accountValidation.validate(clientFrom, money);
+                                if (errorCause != ErrorCause.OK){
+                                    return new PaymentStatus(errorCause);
+                                }
                                 BigDecimal newAmountSender = clientFrom.getAmount().subtract(money);
                                 BigDecimal newAmountReceiver = clientTo.getAmount().add(money);
                                 clientFrom.setAmount(newAmountSender);
@@ -65,10 +65,14 @@ public class MoneyTransferService {
                     }
                 }
                 Thread.sleep(100);
-            } catch (InterruptedException e) {
+            } catch (IllegalArgumentException e){
+                logger.error(e.getMessage());
+            }
+            catch (InterruptedException | RuntimeException e) {
                 e.printStackTrace();
             }
         }
+
         logger.info("Transaction failed");
         return new PaymentStatus(ErrorCause.FAIL);
 

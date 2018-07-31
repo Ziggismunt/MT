@@ -20,13 +20,12 @@ public class AccountRepository {
         clients.putIfAbsent(account.getID(), account);
     }
 
-    public int setClientsMoney(long id, BigDecimal amount){
+    public void setClientsMoney(long id, BigDecimal amount){
         if (! ifClientExist(id)){
-            logger.error("No such client!");
-            return -1;
+            throw new IllegalArgumentException("No such client!");
         }
         Account client = clients.get(id);
-        return client.setAmount(amount);
+        client.setAmount(amount);
     }
 
     public Account getAccount(Long id){

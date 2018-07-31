@@ -21,19 +21,22 @@ public class AccountRepositoryTest {
         accountRepository.addNewAccount(a2);
     }
 
-
-
     @Test
-    public void setNotExistingClient(){
-        System.out.println(a1.getID());
-        Assert.assertEquals(0, accountRepository.setClientsMoney(1L, new BigDecimal(500)));
-        Assert.assertEquals(-1, accountRepository.setClientsMoney(3L, new BigDecimal(500)));
+    public void setExistingClient(){
+         accountRepository.setClientsMoney(1L, new BigDecimal(500));
+
     }
 
-    @Test
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void setNotExistingClient(){
+        accountRepository.setClientsMoney(100L, new BigDecimal(500));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void setNegativeMoney(){
-        Assert.assertEquals(0, accountRepository.setClientsMoney(1L, new BigDecimal(500)));
-        Assert.assertEquals(-1, accountRepository.setClientsMoney(1L, new BigDecimal(-500)));
+      accountRepository.setClientsMoney(1L, new BigDecimal(-500));
     }
 
 

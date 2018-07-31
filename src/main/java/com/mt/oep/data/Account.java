@@ -37,13 +37,12 @@ public class Account {
         return amount;
     }
 
-    public int setAmount(BigDecimal amount) {
+    public void setAmount(BigDecimal amount) {
         if (amount.compareTo(new BigDecimal(0)) < 0) {
-            logger.error("Clients can't have negative amount of money!");
-            return -1;
+            //logger.error("Clients can't have negative amount of money!");
+            throw new IllegalArgumentException("Clients can't have negative amount of money!");
         }
         this.amount = amount;
-        return 0;
     }
 
     @Override
