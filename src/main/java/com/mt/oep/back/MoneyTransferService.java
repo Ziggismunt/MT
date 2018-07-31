@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 
 import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -24,51 +25,49 @@ public class MoneyTransferService {
         logger = LoggerFactory.getLogger(MoneyTransferService.class);
     }
 
-    public PaymentStatus sendMoney(Account clientFrom, Account clientTo, BigDecimal money){
+    public PaymentStatus sendMoney(Account clientFrom, Account clientTo, BigDecimal money) {
         // primitive checks
-        if (clientFrom.equals(clientTo)){
+        if (clientFrom.equals(clientTo)) {
             logger.error("You can't send money to yourself");
             return new PaymentStatus(ErrorCause.TO_HIMSELF);
         }
         ErrorCause errorCause = accountValidation.validate(clientTo);
-        if (errorCause != ErrorCause.OK){
+        if (errorCause != ErrorCause.OK) {
             return new PaymentStatus(errorCause);
         }
         // end of primitive checks
 
         ReentrantLock lockFrom = lockerService.getLock(clientFrom);
         ReentrantLock lockTo = lockerService.getLock(clientTo);
+        Long idFrom = clientFrom.getID();
+        Long idTo = clientTo.getID();
+        ReentrantLock firstLock;
+        ReentrantLock secondLock;
+        if (idFrom < idTo) {
+            firstLock = lockFrom;
+            secondLock = lockTo;
+        } else {
+            firstLock = lockTo;
+            secondLock = lockFrom;
+        }
         for (int i = 0; i < 50; i++) {
             try {
-                if (lockFrom.tryLock()) {
-                    try {
-                        if (lockTo.tryLock()) {
-                            try{
-                                errorCause = accountValidation.validate(clientFrom, money);
-                                if (errorCause != ErrorCause.OK){
-                                    return new PaymentStatus(errorCause);
-                                }
-                                BigDecimal newAmountSender = clientFrom.getAmount().subtract(money);
-                                BigDecimal newAmountReceiver = clientTo.getAmount().add(money);
-                                clientFrom.setAmount(newAmountSender);
-                                clientTo.setAmount(newAmountReceiver);
-                                return new PaymentStatus(ErrorCause.OK);
-                                //break;
-                            }
-                            finally {
-                                lockTo.unlock();
-                            }
+                synchronized (firstLock) {
+                    synchronized (secondLock) {
+                        errorCause = accountValidation.validate(clientFrom, money);
+                        if (errorCause != ErrorCause.OK){
+                            return new PaymentStatus(errorCause);
                         }
-                    }
-                    finally {
-                        lockFrom.unlock();
+                        BigDecimal newAmountSender = clientFrom.getAmount().subtract(money);
+                        BigDecimal newAmountReceiver = clientTo.getAmount().add(money);
+                        clientFrom.setAmount(newAmountSender);
+                        clientTo.setAmount(newAmountReceiver);
+                        return new PaymentStatus(ErrorCause.OK);
                     }
                 }
-                Thread.sleep(100);
-            } catch (IllegalArgumentException e){
+            } catch (IllegalArgumentException e) {
                 logger.error(e.getMessage());
-            }
-            catch (InterruptedException | RuntimeException e) {
+            } catch (RuntimeException e) {
                 e.printStackTrace();
             }
         }
@@ -76,19 +75,6 @@ public class MoneyTransferService {
         logger.info("Transaction failed");
         return new PaymentStatus(ErrorCause.FAIL);
 
-/*         //old
-        synchronized (this){
-            BigDecimal newAmountSender = clientFrom.getAmount().subtract(money);
-            BigDecimal newAmountReceiver = clientTo.getAmount().add(money);
-            clientFrom.setAmount(newAmountSender);
-            clientTo.setAmount(newAmountReceiver);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-*/
     }
 
 

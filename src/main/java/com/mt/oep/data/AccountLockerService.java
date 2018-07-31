@@ -14,13 +14,14 @@ public class AccountLockerService{
     }
 
     public ReentrantLock getLock(Account account){
-        if (map.containsKey(account.getID())) {
-            return map.get(account.getID());
-        }
-        else {
-            ReentrantLock lock = new ReentrantLock();
-            map.put(account.getID(), lock);
-            return lock;
+        synchronized (account) {
+            if (map.containsKey(account.getID())) {
+                return map.get(account.getID());
+            } else {
+                ReentrantLock lock = new ReentrantLock();
+                map.put(account.getID(), lock);
+                return lock;
+            }
         }
     }
 }
