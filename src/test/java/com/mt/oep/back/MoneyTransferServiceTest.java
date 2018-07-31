@@ -1,6 +1,7 @@
 package com.mt.oep.back;
 
 import com.mt.oep.data.Account;
+import com.mt.oep.data.AccountLockerService;
 import com.mt.oep.data.AccountRepository;
 import com.mt.oep.back.PaymentStatus;
 import com.mt.oep.data.AccountValidation;
@@ -9,10 +10,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MoneyTransferServiceTest {
     MoneyTransferService moneyTransferService;
     AccountValidation accountValidation;
+    AccountLockerService accountLockerService;
     AccountRepository accountRepository;
     Account a1;
     Account a2;
@@ -22,7 +26,8 @@ public class MoneyTransferServiceTest {
     public void initialize() {
         accountRepository = new AccountRepository();
         accountValidation = new AccountValidation(accountRepository);
-        moneyTransferService = new MoneyTransferService(accountValidation);
+        accountLockerService = new AccountLockerService();
+        moneyTransferService = new MoneyTransferService(accountValidation, accountLockerService);
         a1 = new Account("A", new BigDecimal(5000));
         a2 = new Account("B", new BigDecimal(300));
         a3 = new Account("C");
@@ -57,11 +62,11 @@ public class MoneyTransferServiceTest {
         BigDecimal firstAmount = new BigDecimal(5000);
         BigDecimal secondAmount = new BigDecimal(300);
         BigDecimal toSend = new BigDecimal(1000);
-        accountRepository.setClientsMoney(1L, firstAmount);
-        accountRepository.setClientsMoney(2L, secondAmount);
+        a1.setAmount(firstAmount);
+        a2.setAmount(secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend).getCauseOfError());
-        Assert.assertEquals(firstAmount.subtract(toSend), accountRepository.getAccount(1L).getAmount());
-        Assert.assertEquals(secondAmount.add(toSend), accountRepository.getAccount(2L).getAmount());
+        Assert.assertEquals(firstAmount.subtract(toSend), accountRepository.getAccount(a1.getID()).getAmount());
+        Assert.assertEquals(secondAmount.add(toSend), accountRepository.getAccount(a2.getID()).getAmount());
     }
 
     @Test
@@ -69,12 +74,12 @@ public class MoneyTransferServiceTest {
         BigDecimal firstAmount = new BigDecimal(5000);
         BigDecimal secondAmount = new BigDecimal(300);
         BigDecimal toSend = new BigDecimal(100);
-        accountRepository.setClientsMoney(1L, firstAmount);
-        accountRepository.setClientsMoney(2L, secondAmount);
+        a1.setAmount(firstAmount);
+        a2.setAmount(secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend).getCauseOfError());
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a2, a1, toSend).getCauseOfError());
-        Assert.assertEquals(firstAmount, accountRepository.getAccount(1L).getAmount());
-        Assert.assertEquals(secondAmount, accountRepository.getAccount(2L).getAmount());
+        Assert.assertEquals(firstAmount, accountRepository.getAccount(a1.getID()).getAmount());
+        Assert.assertEquals(secondAmount, accountRepository.getAccount(a2.getID()).getAmount());
     }
 
     @Test
@@ -83,42 +88,46 @@ public class MoneyTransferServiceTest {
         BigDecimal secondAmount = new BigDecimal(300);
         BigDecimal toSend1 = new BigDecimal(100);
         BigDecimal toSend2 = new BigDecimal(50);
-        accountRepository.setClientsMoney(1L, firstAmount);
-        accountRepository.setClientsMoney(2L, secondAmount);
+        a1.setAmount(firstAmount);
+        a2.setAmount(secondAmount);
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a1, a2, toSend1).getCauseOfError());
         Assert.assertEquals(ErrorCause.OK, moneyTransferService.sendMoney(a2, a1, toSend2).getCauseOfError());
-        Assert.assertEquals(firstAmount.subtract(toSend1).add(toSend2), accountRepository.getAccount(1L).getAmount());
-        Assert.assertEquals(secondAmount.add(toSend1).subtract(toSend2), accountRepository.getAccount(2L).getAmount());
+        Assert.assertEquals(firstAmount.subtract(toSend1).add(toSend2), accountRepository.getAccount(a1.getID()).getAmount());
+        Assert.assertEquals(secondAmount.add(toSend1).subtract(toSend2), accountRepository.getAccount(a2.getID()).getAmount());
     }
 
     //TODO threads!
 
-    private class TransferThread extends Thread{
+    private class myRunnable implements Runnable{
         @Override
         public void run() {
             moneyTransferService.sendMoney(a1, a2, new BigDecimal(100));
-            //moneyTransferService.sendMoney(2L, 3L, 50f);
+            moneyTransferService.sendMoney(a2, a3, new BigDecimal(50));
             moneyTransferService.sendMoney(a2, a1, new BigDecimal(50));
         }
     }
 
     @Test
     public void ThirtyTransferThreads(){
-        accountRepository.setClientsMoney(1L, new BigDecimal(4000000));
-        accountRepository.setClientsMoney(2L, new BigDecimal(1));
-        accountRepository.setClientsMoney(3L, new BigDecimal(0));
+        BigDecimal firstAmount = new BigDecimal(4000000);
+        BigDecimal secondAmount = new BigDecimal(1);
+        BigDecimal thirdAmount = new BigDecimal(0);
+        accountRepository.setClientsMoney(1L, firstAmount);
+        accountRepository.setClientsMoney(2L, secondAmount);
+        accountRepository.setClientsMoney(3L, thirdAmount);
+        ExecutorService executor = Executors.newFixedThreadPool(100);
+
         for (int i = 0; i < 300; i++){
-            TransferThread tt = new TransferThread();
-            tt.run();
-//            try {
-//                //tt.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            Runnable runnable = new myRunnable();
+            executor.execute(runnable);
         }
-        System.out.println(accountRepository.getAccount(1L).getAmount());
-        System.out.println(accountRepository.getAccount(2L).getAmount());
-        System.out.println(accountRepository.getAccount(3L).getAmount());
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+        System.out.println(accountRepository.getAccount(a1.getID()).getAmount());
+        System.out.println(accountRepository.getAccount(a2.getID()).getAmount());
+        System.out.println(accountRepository.getAccount(a3.getID()).getAmount());
+        Assert.assertEquals(firstAmount.add(secondAmount).add(thirdAmount), a1.getAmount().add(a2.getAmount()).add(a3.getAmount()));
 
 
 

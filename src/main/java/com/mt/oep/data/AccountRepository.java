@@ -4,28 +4,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class AccountRepository {
     private ConcurrentMap<Long, Account> clients;
-    private static AtomicLong maxID;
     private Logger logger;
 
     public AccountRepository() {
-        maxID = new AtomicLong(0L);
         this.clients = new ConcurrentHashMap<>();
         logger = LoggerFactory.getLogger(AccountRepository.class);
     }
 
     public void addNewAccount(Account account){
-        clients.putIfAbsent(maxID.incrementAndGet(), account);
-    }
-
-    public void addNewClient(String name){
-        clients.putIfAbsent(maxID.incrementAndGet(), new Account(name));
+        clients.putIfAbsent(account.getID(), account);
     }
 
     public int setClientsMoney(long id, BigDecimal amount){
