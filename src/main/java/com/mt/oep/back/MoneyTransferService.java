@@ -38,7 +38,7 @@ public class MoneyTransferService {
 
         ReentrantLock lockFrom = lockerService.getLock(clientFrom);
         ReentrantLock lockTo = lockerService.getLock(clientTo);
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 50; i++) {
             try {
                 if (lockFrom.tryLock()) {
                     try {

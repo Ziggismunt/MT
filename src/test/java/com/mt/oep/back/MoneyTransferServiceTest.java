@@ -107,12 +107,12 @@ public class MoneyTransferServiceTest {
         public void run() {
             moneyTransferService.sendMoney(a1, a2, new BigDecimal(100));
             //moneyTransferService.sendMoney(a2, a3, new BigDecimal(50));
-            moneyTransferService.sendMoney(a2, a1, new BigDecimal(50));
+            moneyTransferService.sendMoney(a2, a1, new BigDecimal(100));
         }
     }
 
-    @Test
-    public void ThirtyTransferThreads(){
+    //@Test
+    public boolean ThirtyTransferThreads(){
         BigDecimal firstAmount = new BigDecimal(4000000);
         BigDecimal secondAmount = new BigDecimal(1);
         BigDecimal thirdAmount = new BigDecimal(0);
@@ -128,10 +128,23 @@ public class MoneyTransferServiceTest {
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
-        System.out.println(accountRepository.getAccount(a1.getID()).getAmount());
-        System.out.println(accountRepository.getAccount(a2.getID()).getAmount());
-        System.out.println(accountRepository.getAccount(a3.getID()).getAmount());
+//        System.out.println(accountRepository.getAccount(a1.getID()).getAmount());
+//        System.out.println(accountRepository.getAccount(a2.getID()).getAmount());
+//        System.out.println(accountRepository.getAccount(a3.getID()).getAmount());
         Assert.assertEquals(firstAmount.add(secondAmount).add(thirdAmount), a1.getAmount().add(a2.getAmount()).add(a3.getAmount()));
+        boolean b = firstAmount.add(secondAmount).add(thirdAmount).equals(a1.getAmount().add(a2.getAmount()).add(a3.getAmount()));
+        //System.out.println(b);
+        return b;
+
+    }
+
+    @Test
+    public void ManyTests(){
+        boolean b = true;
+        for (int i = 0; i < 300; i++){
+            b = b & ThirtyTransferThreads();
+        }
+        Assert.assertEquals(Boolean.TRUE, Boolean.valueOf(b));
 
     }
 
